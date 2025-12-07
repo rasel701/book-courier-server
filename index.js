@@ -105,6 +105,31 @@ async function run() {
       res.send(result);
     });
 
+    // BOOK REVIEW
+
+    app.patch("/book-rating-review", async (req, res) => {
+      const bookData = req.body;
+
+      console.log(bookData);
+      const query = { _id: new ObjectId(bookData.bookId) };
+      const book = await booksCollection.findOne(query);
+      const reviews = book.reviews || [];
+
+      const isExist = reviews.find(
+        (rev) => rev.reviewer_email === bookData.reviewer_email
+      );
+      if (isExist) {
+        return res
+          .status(400)
+          .send({ message: "You already reviewed this book!" });
+      }
+
+      const result = await booksCollection.updateOne(query, {
+        $push: { reviews: bookData },
+      });
+      res.send(result);
+    });
+
     // Service Center
 
     app.get("/service-center", async (req, res) => {
