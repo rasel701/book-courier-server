@@ -28,6 +28,7 @@ async function run() {
     const userCollection = db.collection("users");
     const booksCollection = db.collection("books");
     const serviceCollection = db.collection("serviceCenter");
+    const bookOredrCollection = db.collection("bookOrders");
 
     //  USER SECTION
 
@@ -81,6 +82,26 @@ async function run() {
 
       const query = { _id: new ObjectId(id) };
       const result = await booksCollection.findOne(query);
+      res.send(result);
+    });
+
+    // BOOK ORDER
+
+    app.post("/book-order", async (req, res) => {
+      const orderData = req.body;
+      const { bookId, name, email } = orderData;
+      const query = { _id: new ObjectId(bookId) };
+
+      const orderItem = {
+        order_user_name: name,
+        order_user_email: email,
+        createdAt: new Date(),
+      };
+
+      const bookResult = await booksCollection.updateOne(query, {
+        $push: { orders: orderItem },
+      });
+      const result = await bookOredrCollection.insertOne(orderData);
       res.send(result);
     });
 
