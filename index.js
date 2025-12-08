@@ -17,7 +17,6 @@ admin.initializeApp({
 
 const verifyFBToken = async (req, res, next) => {
   const token = req.headers.authorization;
-  console.log("This is a token");
   if (!token) {
     return res.status(401).send({ emssage: "unauthoized user" });
   }
@@ -128,17 +127,24 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/book-order/:email", verifyFBToken, async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      console.log("email is ", email);
-      console.log("decoded email", req.decoded_email);
-      const result = await bookOredrCollection.find(query).toArray();
+    app.patch("/book-order-cancel/:id", async (req, res) => {
+      const { id } = req.params;
+
+      const query = { _id: new ObjectId(id) };
+      const updateState = {
+        $set: {
+          status: "cancel",
+        },
+      };
+
+      const result = await bookOredrCollection.updateOne(query, updateState);
       res.send(result);
     });
 
-    app.get("/book-order", async (req, res) => {
-      const result = await bookOredrCollection.find().toArray();
+    app.get("/book-order/:email", verifyFBToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await bookOredrCollection.find(query).toArray();
       res.send(result);
     });
 
