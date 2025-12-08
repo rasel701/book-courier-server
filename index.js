@@ -4,6 +4,7 @@ require("dotenv").config();
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const admin = require("firebase-admin");
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 const serviceAccount = require("./book-courier-7c825-firebase.json");
 const port = 3000;
@@ -124,6 +125,55 @@ async function run() {
         $push: { orders: orderItem },
       });
       const result = await bookOredrCollection.insertOne(orderData);
+      res.send(result);
+    });
+
+    app.post("/create-checkout-session", async (req, res) => {
+      const { price, title, bookId, email, orderId } = req.body;
+      const amount = parseInt(price) * 100;
+      const session = await stripe.checkout.sessions.create({
+        line_items: [
+          {
+            price_data: {
+              currency: "USD",
+              unit_amount: amount,
+              product_data: {
+                name: title,
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        customer_email: email,
+        mode: "payment",
+        metadata: {
+          bookId: bookId,
+          orderId: orderId,
+        },
+        success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancel`,
+      });
+
+      res.send({ url: session.url });
+    });
+
+    app.patch("/payment-success", async (req, res) => {
+      const sessiondId = req.query.session_id;
+      const session = await stripe.checkout.sessions.retrieve(sessiondId);
+      console.log("session retrieve ", session);
+      if (session.payment_status !== "paid") {
+        return res.send({ message: "payment can not success" });
+      }
+      const id = session.metadata.orderId;
+      const query = { _id: new ObjectId(id) };
+      const updateState = {
+        $set: {
+          paymentStatus: "paid",
+          payment_add: new Date(),
+          paymentId: session.payment_intent,
+        },
+      };
+      const result = await bookOredrCollection.updateOne(query, updateState);
       res.send(result);
     });
 
