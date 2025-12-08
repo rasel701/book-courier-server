@@ -198,6 +198,14 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/payment-book/:email", async (req, res) => {
+      const { email } = req.params;
+      console.log(email);
+      const query = { email: email, paymentStatus: "paid" };
+      const result = await bookOredrCollection.find(query).toArray();
+      res.send(result);
+    });
+
     // BOOK REVIEW
 
     app.patch("/book-rating-review", async (req, res) => {
