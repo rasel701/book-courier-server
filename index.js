@@ -137,6 +137,11 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/book-order", async (req, res) => {
+      const result = await bookOredrCollection.find().toArray();
+      res.send(result);
+    });
+
     // BOOK REVIEW
 
     app.patch("/book-rating-review", async (req, res) => {
