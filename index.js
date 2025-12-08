@@ -3,10 +3,32 @@ const app = express();
 require("dotenv").config();
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const admin = require("firebase-admin");
+
+const serviceAccount = require("path/to/serviceAccountKey.json");
 const port = 3000;
 
 app.use(express.json());
 app.use(cors());
+
+const verifyFBToken = async (req, res, next) => {
+  const token = req.headers.authorization;
+  if (!token) {
+    return res.status(401).send({ emssage: "unauthoized user" });
+  }
+  try {
+    const idToken = token.split(" ")[1];
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    req.decoded_email = decoded.email;
+    next();
+  } catch (error) {
+    return res.status(401).send({ message: "Unauthorized access" });
+  }
+};
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.8tne59p.mongodb.net/?appName=Cluster0`;
 
@@ -102,6 +124,15 @@ async function run() {
         $push: { orders: orderItem },
       });
       const result = await bookOredrCollection.insertOne(orderData);
+      res.send(result);
+    });
+
+    app.get("/book-order/:email", async (req, res) => {
+      const email = req.params.email;
+      console.log(req.headers.authorization);
+      const query = { email: email };
+      console.log("email is ", email);
+      const result = await bookOredrCollection.find(query).toArray();
       res.send(result);
     });
 
