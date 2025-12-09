@@ -115,6 +115,21 @@ async function run() {
       res.send(result);
     });
 
+    app.get(
+      "/librarian-book/:librarianEmail",
+      verifyFBToken,
+      async (req, res) => {
+        const librarianEmail = req.params.librarianEmail;
+
+        const query = {};
+        if (librarianEmail) {
+          query.librarianEmail = librarianEmail;
+        }
+        const result = await booksCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
+
     app.get("/books", async (req, res) => {
       const query = {};
       const result = await booksCollection
@@ -130,6 +145,43 @@ async function run() {
 
       const query = { _id: new ObjectId(id) };
       const result = await booksCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.patch("/books/:id", async (req, res) => {
+      const { status } = req.body;
+      const id = req.params.id;
+      console.log(status);
+      const query = { _id: new ObjectId(id) };
+      const newStatus = status === "published" ? "unpublished" : "published";
+      const updateDoc = {
+        $set: {
+          status: newStatus,
+        },
+      };
+
+      const result = await booksCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
+    app.patch("/book-edit/:id", async (req, res) => {
+      const bookData = req.body;
+      const { id } = req.params;
+      console.log(bookData);
+      const query = { _id: new ObjectId(id) };
+
+      const updateDoc = {
+        $set: {
+          bookName: bookData.bookName,
+          author: bookData.author,
+          image: bookData.image,
+          status: bookData.status,
+          price: bookData.price,
+          description: bookData.description,
+          category: bookData.category,
+        },
+      };
+      const result = await booksCollection.updateOne(query, updateDoc);
       res.send(result);
     });
 
