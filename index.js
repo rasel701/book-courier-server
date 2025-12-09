@@ -135,7 +135,7 @@ async function run() {
       const result = await booksCollection
         .find()
         .sort({ createdAt: -1 })
-        .limit(6)
+        .limit(12)
         .toArray();
       res.send(result);
     });
@@ -161,6 +161,43 @@ async function run() {
       };
 
       const result = await booksCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
+    app.get("/order-book/:email", async (req, res) => {
+      const { email } = req.params;
+      console.log(email);
+      const query = { librarianEmail: email };
+      const result = await booksCollection
+        .aggregate([
+          {
+            $match: { librarianEmail: email },
+          },
+          {
+            $lookup: {
+              from: "bookOrders",
+              let: { bookId: "$_id" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $eq: ["$bookId", { $toString: "$$bookId" }],
+                    },
+                  },
+                },
+              ],
+              as: "bookOrderDetails",
+            },
+          },
+          {
+            $unwind: {
+              path: "$bookOrderDetails",
+              preserveNullAndEmptyArrays: false,
+            },
+          },
+        ])
+        .toArray();
+
       res.send(result);
     });
 
