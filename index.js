@@ -88,6 +88,20 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/user/:id", async (req, res) => {
+      const { id } = req.params;
+      const { name, image } = req.body;
+      const query = { _id: new ObjectId(id) };
+      const updateState = {
+        $set: {
+          displayName: name,
+          photoURL: image,
+        },
+      };
+      const result = await userCollection.updateOne(query, updateState);
+      res.send(result);
+    });
+
     // BOOKS SECTION
 
     app.get("/books", async (req, res) => {
@@ -200,7 +214,7 @@ async function run() {
 
     app.get("/payment-book/:email", async (req, res) => {
       const { email } = req.params;
-      console.log(email);
+
       const query = { email: email, paymentStatus: "paid" };
       const result = await bookOredrCollection.find(query).toArray();
       res.send(result);
