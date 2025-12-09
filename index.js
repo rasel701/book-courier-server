@@ -104,6 +104,17 @@ async function run() {
 
     // BOOKS SECTION
 
+    app.post("/book-add", async (req, res) => {
+      const bookData = req.body;
+      const query = { bookName: bookData.bookName };
+      const isExist = await booksCollection.findOne(query);
+      if (isExist) {
+        return res.send({ message: "This book already created" });
+      }
+      const result = await booksCollection.insertOne(bookData);
+      res.send(result);
+    });
+
     app.get("/books", async (req, res) => {
       const query = {};
       const result = await booksCollection
