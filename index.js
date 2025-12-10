@@ -151,7 +151,6 @@ async function run() {
     app.patch("/books/:id", async (req, res) => {
       const { status } = req.body;
       const id = req.params.id;
-      console.log(status);
       const query = { _id: new ObjectId(id) };
       const newStatus = status === "published" ? "unpublished" : "published";
       const updateDoc = {
@@ -164,9 +163,39 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/book-order-status/:id", async (req, res) => {
+      const { id } = req.params;
+      const status = req.query.status;
+      const query = { _id: new ObjectId(id) };
+
+      const updateDoc = {
+        $set: {
+          status: status,
+        },
+      };
+
+      const result = await bookOredrCollection.updateOne(query, updateDoc);
+
+      res.send(result);
+    });
+
+    app.patch("/book-order-cancel/:id", async (req, res) => {
+      const { id } = req.params;
+      console.log(id);
+      const query = { _id: new ObjectId(id) };
+
+      const updateDoc = {
+        $set: {
+          status: "cancel",
+        },
+      };
+      const result = await bookOredrCollection.updateOne(query, updateDoc);
+
+      res.send(result);
+    });
+
     app.get("/order-book/:email", async (req, res) => {
       const { email } = req.params;
-      console.log(email);
       const query = { librarianEmail: email };
       const result = await booksCollection
         .aggregate([
