@@ -65,6 +65,11 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/all-users", verifyFBToken, async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
     app.post("/users", async (req, res) => {
       const { displayName, email, photoURL } = req.body;
       const role = "user";
@@ -96,6 +101,20 @@ async function run() {
         $set: {
           displayName: name,
           photoURL: image,
+        },
+      };
+      const result = await userCollection.updateOne(query, updateState);
+      res.send(result);
+    });
+
+    app.patch("/user-role-change/:id", verifyFBToken, async (req, res) => {
+      const { id } = req.params;
+      const { role } = req.body;
+
+      const query = { _id: new ObjectId(id) };
+      const updateState = {
+        $set: {
+          role: role,
         },
       };
       const result = await userCollection.updateOne(query, updateState);
@@ -135,7 +154,16 @@ async function run() {
       const result = await booksCollection
         .find()
         .sort({ createdAt: -1 })
-        .limit(12)
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
+
+    app.get("/all-books", async (req, res) => {
+      const query = {};
+      const result = await booksCollection
+        .find()
+        .sort({ createdAt: -1 })
         .toArray();
       res.send(result);
     });
