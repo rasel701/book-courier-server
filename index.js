@@ -134,7 +134,7 @@ async function run() {
 
     // ADMIN SUMMARY
 
-    app.get("/admin/dashboard-summary", async (req, res) => {
+    app.get("/admin/dashboard-summary", verifyFBToken, async (req, res) => {
       const Allrole = await userCollection.find().toArray();
       const totalUsers = Allrole.filter((user) => user.role === "user");
       const totalBooks = await booksCollection.countDocuments();
@@ -161,7 +161,7 @@ async function run() {
       });
     });
 
-    app.get("/admin/order-data", async (req, res) => {
+    app.get("/admin/order-data", verifyFBToken, async (req, res) => {
       const pendingOrder = await bookOredrCollection.countDocuments({
         status: "pending",
       });
@@ -220,10 +220,9 @@ async function run() {
     app.get("/all-books", async (req, res) => {
       const search = req.query.search || "";
       console.log(search);
-      const query = {};
+      const query = { status: "published" };
       if (search) {
-        (query.status = "published"),
-          (query.bookName = { $regex: search, $options: "i" });
+        query.bookName = { $regex: search, $options: "i" };
       }
       const books = await booksCollection.find(query).toArray();
 
@@ -233,7 +232,7 @@ async function run() {
       res.send(sortedBooks);
     });
 
-    app.get("/books/:id", async (req, res) => {
+    app.get("/books/:id", verifyFBToken, async (req, res) => {
       const { id } = req.params;
 
       const query = { _id: new ObjectId(id) };
@@ -326,7 +325,7 @@ async function run() {
     app.patch("/book-edit/:id", async (req, res) => {
       const bookData = req.body;
       const { id } = req.params;
-      console.log(bookData);
+
       const query = { _id: new ObjectId(id) };
 
       const updateDoc = {
@@ -457,8 +456,6 @@ async function run() {
 
     app.patch("/book-rating-review", async (req, res) => {
       const bookData = req.body;
-
-      console.log(bookData);
       const query = { _id: new ObjectId(bookData.bookId) };
       const book = await booksCollection.findOne(query);
       const reviews = book.reviews || [];
