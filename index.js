@@ -46,7 +46,7 @@ const client = new MongoClient(uri, {
 });
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const db = client.db("book_courier_db");
     const userCollection = db.collection("users");
     const booksCollection = db.collection("books");
@@ -174,7 +174,6 @@ async function run() {
       const cancelOrder = await bookOredrCollection.countDocuments({
         status: "cancel",
       });
-      console.log({ pendingOrder, shippedOrder, deliveredOrder, cancelOrder });
 
       res.send({ pendingOrder, shippedOrder, deliveredOrder, cancelOrder });
     });
@@ -219,7 +218,6 @@ async function run() {
 
     app.get("/all-books", async (req, res) => {
       const search = req.query.search || "";
-      console.log(search);
       const query = { status: "published" };
       if (search) {
         query.bookName = { $regex: search, $options: "i" };
@@ -232,7 +230,16 @@ async function run() {
       res.send(sortedBooks);
     });
 
-    app.get("/books/:id", verifyFBToken, async (req, res) => {
+    app.get("/all-books-admin", async (req, res) => {
+      const books = await booksCollection.find().toArray();
+
+      const sortedBooks = books.sort(
+        (a, b) => Number(b.price) - Number(a.price)
+      );
+      res.send(sortedBooks);
+    });
+
+    app.get("/books/:id", async (req, res) => {
       const { id } = req.params;
 
       const query = { _id: new ObjectId(id) };
@@ -273,7 +280,7 @@ async function run() {
 
     app.patch("/book-order-cancel/:id", async (req, res) => {
       const { id } = req.params;
-      console.log(id);
+
       const query = { _id: new ObjectId(id) };
 
       const updateDoc = {
@@ -406,7 +413,6 @@ async function run() {
     app.patch("/payment-success", async (req, res) => {
       const sessiondId = req.query.session_id;
       const session = await stripe.checkout.sessions.retrieve(sessiondId);
-      console.log("session retrieve ", session);
       if (session.payment_status !== "paid") {
         return res.send({ message: "payment can not success" });
       }
@@ -482,7 +488,7 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
