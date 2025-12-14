@@ -93,6 +93,17 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/user-wishlist/:email", async (req, res) => {
+      const { email } = req.params;
+      const query = { email: email };
+      const updateDoc = {
+        $addToSet: { wishlist: req.body },
+      };
+      const result = await userCollection.updateOne(query, updateDoc);
+
+      res.send(result);
+    });
+
     app.patch("/user/:id", async (req, res) => {
       const { id } = req.params;
       const { name, image } = req.body;
@@ -119,6 +130,53 @@ async function run() {
       };
       const result = await userCollection.updateOne(query, updateState);
       res.send(result);
+    });
+
+    // ADMIN SUMMARY
+
+    app.get("/admin/dashboard-summary", async (req, res) => {
+      const Allrole = await userCollection.find().toArray();
+      const totalUsers = Allrole.filter((user) => user.role === "user");
+      const totalBooks = await booksCollection.countDocuments();
+      const publishedBooks = await booksCollection.countDocuments({
+        status: "published",
+      });
+      const unpublishedBooks = await booksCollection.countDocuments({
+        status: "unpublished",
+      });
+
+      const totalOrder = await bookOredrCollection.countDocuments();
+
+      const pendingOrder = await bookOredrCollection.countDocuments({
+        status: "pending",
+      });
+
+      res.send({
+        totalUser: totalUsers.length,
+        totalBooks,
+        publishedBooks,
+        unpublishedBooks,
+        totalOrder,
+        pendingOrder,
+      });
+    });
+
+    app.get("/admin/order-data", async (req, res) => {
+      const pendingOrder = await bookOredrCollection.countDocuments({
+        status: "pending",
+      });
+      const deliveredOrder = await bookOredrCollection.countDocuments({
+        status: "delivered",
+      });
+      const shippedOrder = await bookOredrCollection.countDocuments({
+        status: "shipped",
+      });
+      const cancelOrder = await bookOredrCollection.countDocuments({
+        status: "cancel",
+      });
+      console.log({ pendingOrder, shippedOrder, deliveredOrder, cancelOrder });
+
+      res.send({ pendingOrder, shippedOrder, deliveredOrder, cancelOrder });
     });
 
     // BOOKS SECTION
@@ -160,12 +218,19 @@ async function run() {
     });
 
     app.get("/all-books", async (req, res) => {
+      const search = req.query.search || "";
+      console.log(search);
       const query = {};
-      const result = await booksCollection
-        .find()
-        .sort({ createdAt: -1 })
-        .toArray();
-      res.send(result);
+      if (search) {
+        (query.status = "published"),
+          (query.bookName = { $regex: search, $options: "i" });
+      }
+      const books = await booksCollection.find(query).toArray();
+
+      const sortedBooks = books.sort(
+        (a, b) => Number(b.price) - Number(a.price)
+      );
+      res.send(sortedBooks);
     });
 
     app.get("/books/:id", async (req, res) => {
@@ -277,6 +342,17 @@ async function run() {
       };
       const result = await booksCollection.updateOne(query, updateDoc);
       res.send(result);
+    });
+
+    app.delete("/book-delete/:id", async (req, res) => {
+      const { id } = req.params;
+      const bookDeta = await booksCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      const bookOrderData = await bookOredrCollection.deleteMany({
+        bookId: id,
+      });
+      res.send({ bookDeta, bookOrderData });
     });
 
     // BOOK ORDER
