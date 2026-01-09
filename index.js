@@ -211,7 +211,7 @@ async function run() {
       const result = await booksCollection
         .find()
         .sort({ createdAt: -1 })
-        .limit(6)
+        .limit(8)
         .toArray();
       res.send(result);
     });
@@ -485,6 +485,53 @@ async function run() {
 
     app.get("/service-center", async (req, res) => {
       const result = await serviceCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/user-status/:email", async (req, res) => {
+      const { email } = req.params;
+      const result = await bookOredrCollection
+        .aggregate([
+          {
+            $match: { email: email },
+          },
+          {
+            $facet: {
+              payemntStatus: [
+                {
+                  $group: {
+                    _id: "$paymentStatus",
+                    count: { $sum: 1 },
+                  },
+                },
+              ],
+              orderStatus: [
+                {
+                  $group: {
+                    _id: "$status",
+                    count: { $sum: 1 },
+                  },
+                },
+              ],
+            },
+          },
+        ])
+        .toArray();
+      res.send(result);
+    });
+
+    app.get("/user-popular-books", async (req, res) => {
+      const result = await bookOredrCollection
+        .aggregate([
+          {
+            $group: {
+              _id: "$book_Name",
+              count: { $sum: 1 },
+            },
+          },
+        ])
+        .toArray();
+
       res.send(result);
     });
 
