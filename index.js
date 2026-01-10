@@ -218,17 +218,44 @@ async function run() {
     });
 
     app.get("/all-books", async (req, res) => {
-      const search = req.query.search || "";
-      const query = { status: "published" };
-      if (search) {
-        query.bookName = { $regex: search, $options: "i" };
-      }
-      const books = await booksCollection.find(query).toArray();
+      try {
+        const { search, category, price } = req.query;
+        console.log({ search, category, price });
 
-      const sortedBooks = books.sort(
-        (a, b) => Number(b.price) - Number(a.price)
-      );
-      res.send(sortedBooks);
+        let searchQuery = { status: "published" };
+        let categoryQuery = { status: "published" };
+        let priceQuery = { status: "published" };
+
+        if (search && search.trim() !== "") {
+          searchQuery.bookName = { $regex: search, $options: "i" };
+        }
+
+        if (category && category !== "all") {
+          categoryQuery.category = category;
+        }
+
+        if (price && price !== "all") {
+          const numericPrice = Number(price);
+          if (!isNaN(numericPrice)) {
+            priceQuery.price = { $lte: numericPrice };
+          }
+        }
+
+        const finalQuery = {
+          ...searchQuery,
+          ...categoryQuery,
+          ...priceQuery,
+        };
+
+        const result = await booksCollection
+          .find(finalQuery)
+          .sort({ createdAt: -1 })
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "Server Error", error });
+      }
     });
 
     app.get("/all-books-admin", async (req, res) => {
@@ -538,7 +565,6 @@ async function run() {
 
     app.post("/contact-messages", async (req, res) => {
       const userData = req.body;
-      console.log(userData);
       const newData = {
         ...userData,
         createdAt: new Date(),
