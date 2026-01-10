@@ -52,6 +52,7 @@ async function run() {
     const booksCollection = db.collection("books");
     const serviceCollection = db.collection("serviceCenter");
     const bookOredrCollection = db.collection("bookOrders");
+    const contactMessageCollection = db.collection("contactMessage");
 
     //  USER SECTION
 
@@ -532,6 +533,17 @@ async function run() {
         ])
         .toArray();
 
+      res.send(result);
+    });
+
+    app.post("/contact-messages", async (req, res) => {
+      const userData = req.body;
+      console.log(userData);
+      const newData = {
+        ...userData,
+        createdAt: new Date(),
+      };
+      const result = await contactMessageCollection.insertOne(newData);
       res.send(result);
     });
 
