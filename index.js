@@ -220,7 +220,6 @@ async function run() {
     app.get("/all-books", async (req, res) => {
       try {
         const { search, category, price } = req.query;
-        console.log({ search, category, price });
 
         let searchQuery = { status: "published" };
         let categoryQuery = { status: "published" };
